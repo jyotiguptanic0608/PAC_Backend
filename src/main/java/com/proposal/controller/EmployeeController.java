@@ -55,49 +55,30 @@ public Employee login(
         return null;
     }
 
-    if (registry.hasSession(username)) {
-        throw new RuntimeException("Already Logged In");
+  HttpSession oldSession = registry.getSession(username);
+
+if (oldSession != null) {
+
+    try {
+        oldSession.invalidate();
+    } catch (IllegalStateException e) {
+        // session already invalid
     }
-
-    session.setAttribute("user", employee);
-
-    registry.addSession(
-            username,
-            session.getId()
-    );
-
-    return employee;
 }
-@PostMapping("/force-login")
-public Employee forceLogin(
-        @RequestParam String username,
-        @RequestParam String password,
-        @RequestParam String captcha,
-        HttpSession session) {
 
-    Employee employee =
-            service.login(
-                    username,
-                    password,
-                    captcha,
-                    session
-            );
+session.setAttribute("user", employee);
 
-    if (employee == null) {
-        return null;
-    }
+registry.addSession(username, session);
 
-    registry.removeSession(username);
-
-    registry.addSession(
-            username,
-            session.getId()
-    );
-
-    session.setAttribute("user", employee);
-
-    return employee;
+return employee;
 }
+@GetMapping("/validate-session")
+public boolean validateSession(HttpSession session) {
+
+    return session.getAttribute("user") != null;
+
+}
+
 @GetMapping("/{id}")
 public Employee getEmployee(
         @PathVariable Long id){

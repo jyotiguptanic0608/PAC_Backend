@@ -4,36 +4,28 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.stereotype.Service;
 
+import jakarta.servlet.http.HttpSession;
+
 @Service
 public class SessionRegistryService {
 
-    private final ConcurrentHashMap<String,String>
-            activeSessions=new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, HttpSession> activeSessions =
+            new ConcurrentHashMap<>();
 
-
-    public boolean hasSession(String username){
-
-        return activeSessions.containsKey(username);
-
+    public HttpSession getSession(String username) {
+        return activeSessions.get(username);
     }
 
     public void addSession(String username,
-                           String sessionId){
-
-        activeSessions.put(username,sessionId);
-
+                           HttpSession session) {
+        activeSessions.put(username, session);
     }
 
-    public void removeSession(String username){
-
+    public void removeSession(String username) {
         activeSessions.remove(username);
-
     }
 
-    public String getSessionId(String username){
-
-        return activeSessions.get(username);
-
+    public boolean hasSession(String username) {
+        return activeSessions.containsKey(username);
     }
-
 }
