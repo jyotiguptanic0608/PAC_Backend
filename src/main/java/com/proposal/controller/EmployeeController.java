@@ -10,6 +10,12 @@ import com.proposal.dto.RegisterResponse;
 
 import com.proposal.service.SessionRegistryService;
 
+import com.proposal.dto.ForgotPasswordRequest;
+import com.proposal.dto.ResetPasswordRequest;
+import java.util.Map;
+
+import com.proposal.dto.LoginRequest;
+
 @RestController
 @RequestMapping("/api/employees")
 @CrossOrigin(
@@ -36,42 +42,54 @@ public EmployeeController(
         return service.register(employee);
 
     }
-  @PostMapping("/login")
-public Employee login(
-        @RequestParam String username,
-        @RequestParam String password,
-        @RequestParam String captcha,
+
+    @PostMapping({"/login", "/force-login"})
+    public Employee login(
+        @RequestBody(required = false) LoginRequest loginRequest,
+        @RequestParam(required = false) String username,
+        @RequestParam(required = false) String password,
+        @RequestParam(required = false) String captcha,
         HttpSession session) {
 
-    Employee employee =
-            service.login(
-                    username,
-                    password,
-                    captcha,
-                    session
-            );
+    String user = (loginRequest != null && loginRequest.getUsername() != null)
+            ? loginRequest.getUsername() : username;
+    String pwd = (loginRequest != null && loginRequest.getPassword() != null)
+            ? loginRequest.getPassword() : password;
+    String cap = (loginRequest != null && loginRequest.getCaptcha() != null)
+            ? loginRequest.getCaptcha() : captcha;
+
+    Employee employee = service.login(user, pwd, cap, session);
 
     if (employee == null) {
         return null;
     }
 
-  HttpSession oldSession = registry.getSession(username);
+    HttpSession oldSession = registry.getSession(user);
 
-if (oldSession != null) {
-
-    try {
-        oldSession.invalidate();
-    } catch (IllegalStateException e) {
-        // session already invalid
+    if (oldSession != null) {
+        try {
+            oldSession.invalidate();
+        } catch (IllegalStateException e) {
+            // session already invalid
+        }
     }
+
+    session.setAttribute("user", employee);
+    registry.addSession(user, session);
+
+    return employee;
 }
 
-session.setAttribute("user", employee);
+    @PostMapping("/forgot-password/send-otp")
+    public Map<String, Object> sendForgotPasswordOtp(@RequestBody ForgotPasswordRequest request) {
+        return service.sendForgotPasswordOtp(request.getIdentifier());
+    }
 
-registry.addSession(username, session);
+    @PostMapping("/forgot-password/reset-password")
+    public Map<String, Object> resetPasswordWithOtp(@RequestBody ResetPasswordRequest request) {
+        return service.resetPasswordWithOtp(request);
+    }
 
-return employee;
-}
 @GetMapping("/validate-session")
 public boolean validateSession(HttpSession session) {
 

@@ -2,6 +2,7 @@ package com.proposal.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
 @Table(name="pac_members")
@@ -29,6 +30,9 @@ public class PacMember {
     private String ipNumber;
     private String emergencyContact;
     private String username;
+
+    @JsonIgnore
     private String password;
+
     private String pacDesignation;
 }
