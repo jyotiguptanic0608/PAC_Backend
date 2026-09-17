@@ -144,6 +144,11 @@ pacMemberRepo.save(pacMember);
     }
 
     @Override
+    public List<Employee> getGroupHeads() {
+        return repo.findByGroupHeadTrue();
+    }
+
+    @Override
     public Employee getEmployee(Long id){
         return repo.findById(id).orElse(null);
     }

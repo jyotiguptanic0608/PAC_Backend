@@ -14,10 +14,14 @@ import java.net.MalformedURLException;
 import com.proposal.repository.EmployeeRepository;
 import com.proposal.entity.Employee;
 import com.proposal.entity.ProposalReview;
+import com.proposal.entity.ProposalRevision;
+
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import java.util.List;
+
+import org.springframework.beans.factory.annotation.Value;
 
 @RestController
 @RequestMapping("/api/proposals")
@@ -28,16 +32,18 @@ import java.util.List;
 public class ProposalController {
 
     private final ProposalService service;
-
     private final EmployeeRepository employeeRepo;
 
-public ProposalController(
-        ProposalService service,
-        EmployeeRepository employeeRepo) {
+    @Value("${file.upload-dir:D:/PAC_Proposals}")
+    private String uploadDir;
 
-    this.service = service;
-    this.employeeRepo = employeeRepo;
-}
+    public ProposalController(
+            ProposalService service,
+            EmployeeRepository employeeRepo) {
+
+        this.service = service;
+        this.employeeRepo = employeeRepo;
+    }
 
     @GetMapping
     public List<Proposal> getAll() {
@@ -45,62 +51,71 @@ public ProposalController(
     }
 
     @PostMapping
-public Proposal saveProposal(
-        @RequestParam("employeeId") Long employeeId,
-        @RequestParam("departmentName") String departmentName,
-        @RequestParam("groupHeadName") String groupHeadName,
-        @RequestParam("projectCoordinator") String projectCoordinator,
-        @RequestParam("title") String title,
-        @RequestParam("date") String date,
-        @RequestParam("description") String description,
-        @RequestParam("files") MultipartFile[] files) {
+    public Proposal saveProposal(
+            @RequestParam("employeeId") Long employeeId,
+            @RequestParam("departmentName") String departmentName,
+            @RequestParam("groupHeadName") String groupHeadName,
+            @RequestParam("projectCoordinator") String projectCoordinator,
+            @RequestParam("title") String title,
+            @RequestParam("date") String date,
+            @RequestParam("description") String description,
+            @RequestParam("files") MultipartFile[] files) {
 
-    Employee employee = employeeRepo.findById(employeeId)
-            .orElseThrow(() -> new RuntimeException("Employee not found"));
+        Employee employee = employeeRepo.findById(employeeId)
+                .orElseThrow(() -> new RuntimeException("Employee not found"));
 
-            
+        Proposal proposal = new Proposal();
 
-    Proposal proposal = new Proposal();
+        proposal.setEmployee(employee);
+        proposal.setDepartmentName(departmentName);
+        proposal.setGroupHeadName(groupHeadName);
+        proposal.setProjectCoordinator(projectCoordinator);
+        proposal.setTitle(title);
+        proposal.setDate(date);
+        proposal.setDescription(description);
 
-    proposal.setEmployee(employee);
-    proposal.setDepartmentName(departmentName);
-    proposal.setGroupHeadName(groupHeadName);
-    proposal.setProjectCoordinator(projectCoordinator);
-    proposal.setTitle(title);
-    proposal.setDate(date);
-    proposal.setDescription(description);
+        proposal.setStatus("UNDER_REVIEW");
 
-    proposal.setStatus("UNDER_REVIEW");
+        return service.saveProposal(proposal, files);
+    }
 
-    return service.saveProposal(proposal, files);
-}
+    @PostMapping("/{id}/resubmit")
+    public Proposal resubmitProposal(
+            @PathVariable Long id,
+            @RequestParam("files") MultipartFile[] files,
+            @RequestParam(value = "remarks", required = false) String remarks) {
 
-@GetMapping("/employee/{employeeId}")
-public List<Proposal> getEmployeeProposals(
-        @PathVariable Long employeeId){
+        return service.resubmitProposal(id, files, remarks);
+    }
 
-    return service.getEmployeeProposals(employeeId);
+    @GetMapping("/employee/{employeeId}")
+    public List<Proposal> getEmployeeProposals(
+            @PathVariable Long employeeId) {
 
-}
+        return service.getEmployeeProposals(employeeId);
+
+    }
+
     @PutMapping("/{id}/review")
-public void reviewProposal(
-        @PathVariable Long id,
-        @RequestBody ReviewRequest request) {
+    public void reviewProposal(
+            @PathVariable Long id,
+            @RequestBody ReviewRequest request) {
 
-    Long reviewerId = request.getReviewerId();
+        Long reviewerId = request.getReviewerId();
 
-    service.reviewProposal(
-            id,
-            reviewerId,
-            request.getReview());
-}
+        service.reviewProposal(
+                id,
+                reviewerId,
+                request.getReview());
+    }
+
     @PutMapping("/{id}/approve")
     public Proposal approveProposal(
             @PathVariable Long id) {
 
         return service.approveProposal(id);
     }
-    
+
     @GetMapping("/download/{id}")
     public ResponseEntity<Resource> downloadProposal(
             @PathVariable Long id) {
@@ -108,35 +123,46 @@ public void reviewProposal(
         Proposal proposal =
                 service.getProposalById(id);
 
-        Path path =
-                Paths.get(proposal.getFile());
+        String fileName = proposal.getFile();
+        if (fileName != null && fileName.contains(",")) {
+            fileName = fileName.split(",")[0];
+        }
+
+        Path path = Paths.get(uploadDir).resolve(fileName != null ? fileName : "");
 
         Resource resource;
 
-try {
-    resource = new UrlResource(path.toUri());
-} catch (MalformedURLException e) {
-    throw new RuntimeException("Unable to load file resource", e);
-}
+        try {
+            resource = new UrlResource(path.toUri());
+        } catch (MalformedURLException e) {
+            throw new RuntimeException("Unable to load file resource", e);
+        }
 
         return ResponseEntity.ok()
                 .header(
                         HttpHeaders.CONTENT_DISPOSITION,
-                        "attachment; filename="
-                                + resource.getFilename())
+                        "attachment; filename=\""
+                                + resource.getFilename() + "\"")
                 .body(resource);
     }
-    
+
     @GetMapping("/{id}")
     public Proposal getProposal(
-    		@PathVariable Long id) {
-    	return service.getProposalById(id);
+            @PathVariable Long id) {
+        return service.getProposalById(id);
     }
 
     @GetMapping("/{id}/reviews")
-public List<ProposalReview> getProposalReviews(
-        @PathVariable Long id) {
+    public List<ProposalReview> getProposalReviews(
+            @PathVariable Long id) {
 
-    return service.getProposalReviews(id);
-}
+        return service.getProposalReviews(id);
+    }
+
+    @GetMapping("/{id}/revisions")
+    public List<ProposalRevision> getProposalRevisions(
+            @PathVariable Long id) {
+
+        return service.getProposalRevisions(id);
+    }
 }

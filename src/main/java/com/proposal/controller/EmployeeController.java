@@ -125,6 +125,11 @@ public void logout(HttpSession session) {
         return service.getPacMembers();
     }
     
+    @GetMapping("/group-heads")
+    public List<Employee> getGroupHeads() {
+        return service.getGroupHeads();
+    }
+    
     @GetMapping
     public List<Employee> getAllEmployees() {
 

@@ -3,10 +3,17 @@ import java.util.List;
 import org.springframework.web.multipart.MultipartFile;
 import com.proposal.entity.ProposalReview;
 import com.proposal.entity.Proposal;
+import com.proposal.entity.ProposalRevision;
+
 public interface ProposalService {
     Proposal saveProposal(
             Proposal proposal,
             MultipartFile[] files
+    );
+    Proposal resubmitProposal(
+            Long proposalId,
+            MultipartFile[] files,
+            String remarks
     );
     List<Proposal> getAll();
     void reviewProposal(
@@ -18,4 +25,5 @@ public interface ProposalService {
     Proposal getProposalById(Long id);
     List<Proposal> getEmployeeProposals(Long employeeId);
     List<ProposalReview> getProposalReviews(Long proposalId);
+    List<ProposalRevision> getProposalRevisions(Long proposalId);
 }

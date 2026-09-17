@@ -21,6 +21,7 @@ public interface EmployeeService {
     Employee getEmployee(Long id);
     
     List<Employee> getPacMembers();
+    List<Employee> getGroupHeads();
     List<Employee> getAllEmployees();
 
     Map<String, Object> sendForgotPasswordOtp(String identifier);

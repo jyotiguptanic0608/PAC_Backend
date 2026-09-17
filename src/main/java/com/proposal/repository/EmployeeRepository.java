@@ -17,4 +17,6 @@ public interface EmployeeRepository
     List<Employee> findByPacCommitteeMember(boolean pacCommitteeMember);
 
     List<Employee> findByPacCommitteeMemberTrue();
+
+    List<Employee> findByGroupHeadTrue();
 }

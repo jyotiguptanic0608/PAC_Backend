@@ -45,8 +45,11 @@ private String password;
     @Column(nullable = false)
     private boolean pacCommitteeMember = false;
 
+    @Column(name = "group_head", nullable = false)
+    private boolean groupHead = false;
+
     @OneToMany(mappedBy="employee")
     private List<Proposal> proposals;
     @Column(nullable = false)
-private boolean chairman = false;
+    private boolean chairman = false;
 }
